@@ -46,7 +46,7 @@ ENV NCS_DIR=/nso LD_LIBRARY_PATH=/nso/lib PATH=/nso/bin:$PATH PYTHONPATH=/nso/sr
 #RUN mkdir -p ${NCS_DIR}
 COPY resources/nso-5.1.0.1.linux.x86_64.signed.bin /tmp
 RUN (cd /tmp && ./nso-5.1.0.1.linux.x86_64.signed.bin)
-RUN /tmp/nso-5.2.0.1.linux.x86_64.installer.bin $NCS_DIR
+RUN /tmp/nso-5.1.0.1.linux.x86_64.installer.bin $NCS_DIR
 RUN ncs-setup --dest /nso/interop --no-netsim
 
 # Install pioneer and drned-xmnr
