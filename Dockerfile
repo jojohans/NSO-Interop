@@ -1,4 +1,4 @@
-# ConfD examples
+# NETCONF/YANG interoperability testing container with NSO
 #
 # We use the standard ubuntu bas image.
 FROM ubuntu:19.04
@@ -6,9 +6,8 @@ LABEL description="Docker image for NETCONF and YANG interop testing with NSO." 
 
 # Install the extra packages we need to run NSO, pioneer and DrNED
 # Examiner. Only libssl is actually necessary for NSO itself, the
-# python packages are for DrNED Examiner and DrNED.  The rest of the
-# packages help us better understand what's going on inside the
-# container and meassure network and other I/O performance.
+# python packages and xsltproc and libxml2-utils are needed by DrNED
+# Examiner and DrNED.
 RUN apt-get update && apt-get install -y \
         default-jre-headless \
         git \
@@ -22,55 +21,70 @@ RUN apt-get update && apt-get install -y \
         libxml2-utils \
         xsltproc
 
-#RUN apt-get update && apt-get install -y \
-#    git \
-#    iperf3 \
-#    libssl-dev \
-#    net-tools \
-#    netcat-openbsd \
-#    python-paramiko \
-#    strace \
-#    tcpdump \
-#    vim
-
-# Install NSO
+# Default to latest NSO version.  Override on the command line with
+# --build-arg ver=<version>.
+#
+# Note: host.docker.internal is the only way to get to the host (the
+# Mac) when running Docker Desktop on macOS. In a more realistic
+# setting dev_ip should be set to the IP of the device.
+ARG dev_ip=host.docker.internal
+ARG dev_name=nc0
+ARG dev_pass=admin
+ARG dev_port=2022
+ARG dev_user=admin
+ARG ned_name=tailf-mods
+ARG ned_vendor=tail-f
+ARG ned_ver=0.1
+ARG nso_ver=5.2.1
 
 # What ncsrc usually does...
 ENV NCS_DIR=/nso LD_LIBRARY_PATH=/nso/lib PATH=/nso/bin:$PATH PYTHONPATH=/nso/src/ncs/pyapi
 
-## Install ConfD in the container.  This is not a regular target
-## installation, instead it's only the files required for a minimal
-## target installation as described in section 28.3. Installing ConfD
-## on a target system in the ConfD User Guide.
-#COPY confd-target.tgz /tmp
-#RUN mkdir -p ${NCS_DIR}
-COPY resources/nso-5.1.0.1.linux.x86_64.signed.bin /tmp
-RUN (cd /tmp && ./nso-5.1.0.1.linux.x86_64.signed.bin)
-RUN /tmp/nso-5.1.0.1.linux.x86_64.installer.bin $NCS_DIR
-RUN ncs-setup --dest /nso/interop --no-netsim
+## Install NSO in the container and create a workspace.
+COPY resources/nso-$nso_ver.linux.x86_64.signed.bin /tmp
+RUN (cd /tmp && ./nso-$nso_ver.linux.x86_64.signed.bin)
+RUN /tmp/nso-$nso_ver.linux.x86_64.installer.bin $NCS_DIR
+
+# Support mounting workspace directory from the host.
+RUN ncs-setup --dest interop --no-netsim
 
 # Install pioneer and drned-xmnr
-RUN (cd nso/interop/packages && git clone https://github.com/NSO-developer/pioneer.git)
-RUN (cd nso/interop/packages && git clone https://github.com/NSO-developer/drned-xmnr.git)
-RUN (cd nso/interop/packages/pioneer/src && make clean all)
-RUN (cd nso/interop/packages/drned-xmnr/src && make clean all)
+RUN (cd interop/packages && git clone https://github.com/NSO-developer/drned-xmnr.git)
+RUN (cd interop/packages/drned-xmnr/src && make clean all)
+
+# Allow connections to the NSO IPC-port from any IP-address
+RUN sed -i 's/  <load-path>/  <ncs-ipc-address>\n    <ip>0.0.0.0<\/ip>\n  <\/ncs-ipc-address>\n\n  <load-path>/' interop/ncs.conf
+
+# DrNED Examiner configuration state directory
+RUN mkdir interop/xmnr
+
+# Expose logs and xmnr directories to simplify troubleshooting
+VOLUME interop/logs interop/xmnr
 
 # Enable verbose logging
-COPY resources/init.xml /nso/interop/ncs-cdb
+COPY resources/init.xml interop/ncs-cdb
 
-# Set working directory for the ConfD daemon to the top directory of the
-# mounted example.
-WORKDIR /nso/interop
+# Copy parameters to init file
+RUN sed -i "s/DEVUSER/$dev_user/; \
+            s/DEVPASS/$dev_pass/; \
+            s/DEVNAME/$dev_name/; \
+            s/DEVIP/$dev_ip/;     \
+            s/DEVPORT/$dev_port/; \
+            s/NEDNAME/$ned_name/; \
+            s/NEDVER/$ned_ver/;   \
+            s/NEDVENDOR/$ned_vendor/" interop/ncs-cdb/init.xml
+
+# Set working directory for NSO to the top directory of the mounted
+# example.
+WORKDIR interop
 
 # Initially we only expose NETCONF (over ssh) and IPC ports.
 # Uncomment to expose ports for other northbound protocols as
 # necessary.
-EXPOSE 2022 2023 2024 4565 8008 8088
+EXPOSE 2022 2023 2024 4569 8008 8088
 
 # Cleanup
 RUN apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Start init daemon and ConfD.
-#ENTRYPOINT ["/usr/local/sbin/dumb-init", "--"]
+# Finally, start NSO
 CMD ["/nso/bin/ncs", "--foreground", "-v", "--addloadpath", "/nso/interop"]
-#CMD ["/nso/bin/ncs_cli", "-C", "-u", "admin", "/tmp/setup-interop.txt"]
