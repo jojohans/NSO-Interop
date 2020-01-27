@@ -1,7 +1,7 @@
 # NETCONF/YANG interoperability testing container with NSO
 #
 # We use the standard ubuntu bas image.
-FROM ubuntu:19.04
+FROM ubuntu:19.10
 LABEL description="Docker image for NETCONF and YANG interop testing with NSO." maintainer="jojohans@cisco.com"
 
 # Install the extra packages we need to run NSO, pioneer and DrNED
@@ -35,7 +35,7 @@ ARG dev_user=admin
 ARG ned_name=tailf-mods
 ARG ned_vendor=tail-f
 ARG ned_ver=0.1
-ARG nso_ver=5.2.1
+ARG nso_ver=5.3
 
 # What ncsrc usually does...
 ENV NCS_DIR=/nso LD_LIBRARY_PATH=/nso/lib PATH=/nso/bin:$PATH PYTHONPATH=/nso/src/ncs/pyapi

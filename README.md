@@ -29,4 +29,7 @@ Steps
 
 `$ docker run -d --rm -p 2022:2022 -p 4569:4569 --mount source=interop-logs,target=/interop/logs --mount source=interop-xmnr,target=/interop/xmnr --init --hostname nso-interop --name nso-interop nso-interop:v1`
 
-   Assuming the interop-logs and interop-xmnr volumes already exist.
+   Assuming the interop-logs and interop-xmnr volumes already exist in current working directory.
+
+4. Start the CLI and create the NETCONF NED as described in `Chapter 4
+   NETCONF NED Builder` in the `NSO 5.3 NED Development` guide.
