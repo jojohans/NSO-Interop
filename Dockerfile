@@ -52,7 +52,7 @@ RUN /tmp/nso-$nso_ver.linux.x86_64.installer.bin $NCS_DIR
 RUN ncs-setup --dest interop --no-netsim
 
 # Install pioneer and drned-xmnr
-RUN (cd interop/packages && git clone https://github.com/NSO-developer/drned-xmnr.git)
+RUN (cd interop/packages && git clone -q https://github.com/NSO-developer/drned-xmnr.git)
 RUN (cd interop/packages/drned-xmnr/src && make clean all)
 
 # Allow connections to the NSO IPC-port from any IP-address
