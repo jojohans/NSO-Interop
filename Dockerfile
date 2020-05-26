@@ -1,23 +1,26 @@
 # NETCONF/YANG interoperability testing container with NSO
 #
 # We use the standard ubuntu bas image.
-FROM ubuntu:19.10
+FROM ubuntu:20.04
 LABEL description="Docker image for NETCONF and YANG interop testing with NSO." maintainer="jojohans@cisco.com"
 
 # Install the extra packages we need to run NSO, pioneer and DrNED
 # Examiner. Only libssl is actually necessary for NSO itself, the
 # python packages and xsltproc and libxml2-utils are needed by DrNED
 # Examiner and DrNED.
+        ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
+        apt-utils  \
         default-jre-headless \
         git \
         libssl-dev \
         make \
         openssh-client \
-        python-lxml \
-        python-paramiko \
-        python-pexpect \
-        python-pytest \
+        python-is-python3 \
+        python3-lxml \
+        python3-paramiko \
+        python3-pexpect \
+        python3-pytest \
         libxml2-utils \
         xsltproc
 
