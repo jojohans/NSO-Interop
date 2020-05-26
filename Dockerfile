@@ -38,7 +38,7 @@ ARG dev_user=admin
 ARG ned_name=tailf-mods
 ARG ned_vendor=tail-f
 ARG ned_ver=0.1
-ARG nso_ver=5.3
+ARG nso_ver=5.3.2
 
 # What ncsrc usually does...
 ENV NCS_DIR=/nso LD_LIBRARY_PATH=/nso/lib PATH=/nso/bin:$PATH PYTHONPATH=/nso/src/ncs/pyapi
