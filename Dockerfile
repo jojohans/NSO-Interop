@@ -22,7 +22,10 @@ RUN apt-get update && apt-get install -y \
         python3-pexpect \
         python3-pytest \
         libxml2-utils \
+        vim \
         xsltproc
+
+RUN ln -sv /usr/bin/pytest-3 /usr/bin/pytest
 
 # Default to latest NSO version.  Override on the command line with
 # --build-arg ver=<version>.
@@ -35,25 +38,36 @@ ARG dev_name=nc0
 ARG dev_pass=admin
 ARG dev_port=2022
 ARG dev_user=admin
-ARG ned_name=tailf-mods
-ARG ned_vendor=tail-f
-ARG ned_ver=0.1
-ARG nso_ver=5.3.2
+ARG ned_name=router
+ARG ned_vendor=cisco
+ARG ned_ver=1.0
+ARG nso_ver=5.4
 
 # What ncsrc usually does...
 ENV NCS_DIR=/nso LD_LIBRARY_PATH=/nso/lib PATH=/nso/bin:$PATH PYTHONPATH=/nso/src/ncs/pyapi
+ENV PACKAGES=/packages
 
-## Install NSO in the container and create a workspace.
-COPY resources/nso-$nso_ver.linux.x86_64.signed.bin /tmp
+# Install NSO in the container and create a workspace.
+COPY resources/NSO-$nso_ver/nso-$nso_ver.linux.x86_64.signed.bin /tmp
 RUN (cd /tmp && ./nso-$nso_ver.linux.x86_64.signed.bin)
 RUN /tmp/nso-$nso_ver.linux.x86_64.installer.bin $NCS_DIR
 
-# Support mounting workspace directory from the host.
-RUN ncs-setup --dest interop --no-netsim
+RUN echo 'export PS1="$ "' >> /root/.profile
+
+# Create a NETCONF NED based on the YANG-models we supply
+COPY resources/yangs/ /tmp
+RUN ncs-make-package --netconf-ned /tmp $ned_name --dest $PACKAGES/$ned_name-nc-$ned_ver --no-java --no-python --no-netsim --vendor $ned_vendor --package-version $ned_ver
+RUN make -C $PACKAGES/$ned_name-nc-$ned_ver/src clean all
+
+### Create a netsim network
+##RUN ncs-netsim --dir /interop create-network /interop/neds/$ned_name-nc-$ned_ver 1 nc
 
 # Install pioneer and drned-xmnr
-RUN (cd interop/packages && git clone -q https://github.com/NSO-developer/drned-xmnr.git)
-RUN (cd interop/packages/drned-xmnr/src && make clean all)
+RUN (cd $PACKAGES && git clone -q https://github.com/NSO-developer/drned-xmnr.git)
+RUN make -C $PACKAGES/drned-xmnr/src clean all
+
+# Support mounting workspace directory from the host.
+RUN ncs-setup --dest /interop --package $PACKAGES/drned-xmnr --package $PACKAGES/$ned_name-nc-$ned_ver
 
 # Allow connections to the NSO IPC-port from any IP-address
 RUN sed -i 's/  <load-path>/  <ncs-ipc-address>\n    <ip>0.0.0.0<\/ip>\n  <\/ncs-ipc-address>\n\n  <load-path>/' interop/ncs.conf

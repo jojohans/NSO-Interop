@@ -15,7 +15,7 @@
       <port>DEVPORT</port>
       <device-type>
         <netconf>
-          <ned-id>netconf</ned-id>
+          <ned-id>NEDNAME-nc-NEDVER</ned-id>
         </netconf>
       </device-type>
       <commit-queue>
@@ -26,6 +26,12 @@
       </state>
       <authgroup>interop</authgroup>
     </device>
+    <global-settings>
+      <trace>pretty</trace>
+      <commit-queue>
+        <enabled-by-default>false</enabled-by-default>
+      </commit-queue>
+    </global-settings>
   </devices>
   <drned-xmnr xmlns="http://cisco.com/ns/drned-xmnr">
     <xmnr-directory>xmnr</xmnr-directory>

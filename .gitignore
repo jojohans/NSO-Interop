@@ -1,2 +1,6 @@
-resources/*.bin
-
+resources/NSO-*/**
+resources/yangs/**
+interop-logs/*
+!interop-logs/.gitkeep
+interop-xmnr/**
+!interop-xmnr/.gitkeep
