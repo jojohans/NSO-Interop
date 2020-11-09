@@ -1,7 +1,8 @@
 An NSO interop testing image
 ============================
 
-Build a NSO interop testing container image.
+Build a NSO interop testing container image, including a NETCONF NED
+for the device and the test-tool drned-xmnr..
 
 Prerequisites
 -------------
@@ -24,14 +25,24 @@ Steps
 
 4. Run the docker image and expose the NETCONF and internal IPC ports.
 
-`$ docker run -it --rm -p 2022:2022 -p 4569:4569 --init --hostname nso-interop --name nso-interop nso-interop:<version>`
+`$ docker run -it --rm -p 2024:2024 -p 4569:4569 --init --hostname nso-interop --name nso-interop nso-interop:<version>`
 
    In order to help troubleshooting it makes sense to mount logs and
    DrNED Examiner directories from outside of the container:
 
-`$ docker run -d --rm -p 2022:2022 -p 4569:4569 --mount type=bind,source=/absolute/path/to/interop-logs,target=/interop/logs --mount type=bind,source=/absolute/path/to/interop-xmnr,target=/interop/xmnr --init --hostname nso-interop --name nso-interop nso-interop:<version>`
+`$ docker run -d --rm -p 2024:2024 -p 4569:4569 \
+              --mount type=bind,source=$(pwd)/interop-logs,target=/interop/logs \
+              --mount type=bind,source=$(pwd)/interop-xmnr,target=/interop/xmnr \
+              --mount type=bind,source=$(pwd)/interop-states,target=/interop/states \
+              --mount type=bind,source=$(pwd)/interop-yangs,target=/interop/yangs \
+              --init --hostname nso-interop --name nso-interop nso-interop:<version>`
 
-   Assuming the interop-logs and interop-xmnr volumes already exist in current working directory.
+   Assuming the interop-logs and interop-xmnr volumes already exist in
+   current working directory.
 
-4. Start the CLI and create the NETCONF NED as described in `Chapter 4
-   NETCONF NED Builder` in the `NSO 5.4 NED Development` guide.
+4. Start the NSO CLI and use drned-xmnr as described in the README at `https://github.com/NSO-developer/drned-xmnr.git`.
+
+5. The container includes a script that make it easy to rebuild the
+   existing NED or build a new one.  Add the YANG-models you want to
+   include in the NED to the interop-yangs directory and run the
+   following command: `docker exec nso-interop build-ned <ned-name> <vendor> <version>`.
